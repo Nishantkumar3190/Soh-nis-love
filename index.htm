@@ -20,11 +20,11 @@
       color: #fff;
       font-family: "Segoe UI", Arial, sans-serif;
       background-color: #100817;
-      background-image:
-        linear-gradient(135deg, rgba(17, 5, 30, 0.28), rgba(65, 15, 65, 0.32)),
-        url("./background.jpg");
-      background-position: center;
+      /* Keep the photo visible: no full-screen dark overlay. */
+      background-image: url("./background.jpg");
+      background-position: center center;
       background-size: cover;
+      background-repeat: no-repeat;
       background-attachment: fixed;
       position: relative;
       isolation: isolate;
@@ -40,6 +40,35 @@
       0%, 100% { background-position: 0% 50%; transform: scale(1); }
       50% { background-position: 100% 50%; transform: scale(1.05); }
     }
+    /* Localized night animation: upper-right only, not a full-page black overlay.
+       Adjust width/height if the clouds are positioned differently in background.jpg. */
+    .cloud-night {
+      position: fixed; top: 0; right: 0; width: min(58vw, 760px); height: min(47vh, 430px);
+      overflow: hidden; pointer-events: none; z-index: -2; opacity: 0;
+      background: radial-gradient(ellipse at 78% 12%, rgba(22, 31, 86, .28) 0%, rgba(22, 31, 86, .14) 35%, transparent 74%);
+      animation: cloudNightFade 16s ease-in-out infinite alternate;
+      -webkit-mask-image: linear-gradient(to bottom left, #000 0%, rgba(0,0,0,.72) 45%, transparent 100%);
+      mask-image: linear-gradient(to bottom left, #000 0%, rgba(0,0,0,.72) 45%, transparent 100%);
+    }
+    .cloud-night::before {
+      content: ""; position: absolute; top: 7%; right: 13%; width: 100px; height: 100px;
+      border-radius: 50%; background: radial-gradient(circle, rgba(255,248,220,.24), rgba(200,215,255,.09) 42%, transparent 72%);
+      filter: blur(5px); animation: moonGlow 6s ease-in-out infinite alternate;
+    }
+    .cloud-star {
+      position: absolute; left: var(--sx); top: var(--sy); width: var(--ss); height: var(--ss);
+      border-radius: 50%; background: rgba(255,255,255,.95);
+      box-shadow: 0 0 8px rgba(210,225,255,.85); opacity: .15;
+      animation: cloudTwinkle var(--sd) ease-in-out infinite alternate; animation-delay: var(--delay);
+    }
+    @keyframes cloudNightFade {
+      0% { opacity: .05; }
+      45% { opacity: .28; }
+      100% { opacity: .78; }
+    }
+    @keyframes moonGlow { from { opacity: .35; transform: scale(.94); } to { opacity: 1; transform: scale(1.06); } }
+    @keyframes cloudTwinkle { from { opacity: .12; transform: scale(.65); } to { opacity: .95; transform: scale(1.35); } }
+
     .floating-layer {
       position: fixed; inset: 0; overflow: hidden; pointer-events: none; z-index: 5;
     }
@@ -150,7 +179,9 @@
     @keyframes fadeIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
     @keyframes slideUp { from { opacity: 0; transform: translateY(22px); } to { opacity: 1; transform: translateY(0); } }
     @media (max-width: 650px) {
-      body { background-attachment: scroll; }
+      body { background-attachment: scroll; background-position: center center; }
+      .cloud-night { width: 72vw; height: 36vh; }
+      .cloud-night::before { width: 70px; height: 70px; }
       .page { width: 94%; padding-top: 23px; }
       .player { padding: 24px 16px; }
       .cover-wrapper { width: 180px; height: 180px; }
@@ -167,6 +198,7 @@
 </head>
 <body>
   <div class="ambient" aria-hidden="true"></div>
+  <div class="cloud-night" id="cloud-night" aria-hidden="true"></div>
   <div class="stars" id="stars" aria-hidden="true"></div>
   <div class="floating-layer" id="floating-layer" aria-hidden="true"></div>
 
@@ -250,6 +282,7 @@
     const emptyMessage = document.getElementById("empty-message");
     const floatingLayer = document.getElementById("floating-layer");
     const stars = document.getElementById("stars");
+    const cloudNight = document.getElementById("cloud-night");
 
     let currentIndex = 0;
     let isSeeking = false;
@@ -432,6 +465,20 @@
       star.style.setProperty("--speed", `${2 + Math.random() * 4}s`);
       star.style.setProperty("--delay", `${-Math.random() * 5}s`);
       stars.appendChild(star);
+    }
+
+    // Extra stars are restricted to the upper-right night-sky patch.
+    // They do not cover the whole photo or block the music controls.
+    for (let i = 0; i < 28; i++) {
+      const star = document.createElement("span");
+      star.className = "cloud-star";
+      star.style.setProperty("--sx", `${8 + Math.random() * 88}%`);
+      star.style.setProperty("--sy", `${5 + Math.random() * 82}%`);
+      const size = 1 + Math.random() * 2.2;
+      star.style.setProperty("--ss", `${size}px`);
+      star.style.setProperty("--sd", `${2 + Math.random() * 4}s`);
+      star.style.setProperty("--delay", `${-Math.random() * 5}s`);
+      cloudNight.appendChild(star);
     }
 
     audio.volume = Number(volume.value);
